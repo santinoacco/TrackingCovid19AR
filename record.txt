@@ -1,0 +1,10 @@
+1. Open Google News:
+   https://news.google.com/stories/CAAqOQgKIjNDQklTSURvSmMzUnZjbmt0TXpZd1NoTUtFUWkzNzVhWms0QU1FVlRrNTdKN1BfNmFLQUFQAQ?hl=es-419&gl=AR&ceid=AR%3Aes-419&so=1
+
+2. Inspect the site, using ctrl+shift+i (Chromium)
+
+3. Find the class that stores the info:
+    they all have a tag: 'a' or 'articles' and then 'a'
+    and a class: 'VDXfz'
+
+http://news.google.com/articles/CAIiEJnxvJpp8Mp9AaV-P0Ye_CIqGQgEKhAIACoHCAow_8n_CjC4r_kCMOKV7AU?hl=es-419&gl=AR&ceid=AR%3Aes-419
