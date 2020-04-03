@@ -3,6 +3,26 @@
 ## Required packages
 
 >   pandas
->   requests
+>   numpy
+>   matplotlib and seaborn :: for plotting
+>   os
+>   requests :: to get url data
+>   bs4 :: to work with json files
+>   PyPDF2 :: to read PDFs
+>   re :: for regular expressions
 >   json
 >   news-api, install like: sudo pip3 install newsapi-python
+
+
+
+## Workflow
+
+### 'trackingCov19.py'
+
+    This is a web scrapper that gets the PDF files from the official
+    Health-ministry.
+
+### 'analys_trackCov19.py'
+    
+    This is a data analysis script to read the pdfs and stract relevant     information.
+    In addition it plots the data.
