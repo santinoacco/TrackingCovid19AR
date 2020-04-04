@@ -6,28 +6,41 @@ import PyPDF2
 import re
 from os import listdir
 from os.path import join, splitext
+from datetime import datetime
+import NoaccoLibrary as Nlib
 
 pdfDir_path = '/home/santi_noacco/Desktop/Covid_19/TrackCovid19Ar/Data_Covid19_Ar_pdf'
 
-pdfDict={}
-for filename in listdir(pdfDir_path): 
-    # --Open pdfs and get relevant data
-    pdfFObj = open(join(pdfDir_path,filename),'rb')
-    
-    filename, ext = splitext(filename)
-    numfile, date_file = filename.split('_')[1:]
-    pdfKey=f'{date_file}_{numfile}'
-    
-    pdfReader = PyPDF2.PdfFileReader(pdfFObj)
-    num_pages = pdfReader.numPages
-    #print(f'pdf file has {num_pages} pages')
-    full_text=""
-    for page in range(num_pages):
-        pageObj=pdfReader.getPage(page)
-        full_text+= pageObj.extractText()
-        
-    pdfDict[pdfKey] = full_text
+def get_pdf_content(path):
+    """
+    Description
 
+    # Args::
+    path: to dir of pdfs
+
+    # Returns::$
+    """  
+    pdf_dict={}
+    for filename in listdir(path): 
+        # --Open pdfs and get relevant data
+        pdfFObj = open(join(pdfDir_path,filename),'rb')
+        
+        filename, ext = splitext(filename)
+        numfile, date_file = filename.split('_')[1:]
+        pdfKey=f'{date_file}_{numfile}'
+        
+        pdfReader = PyPDF2.PdfFileReader(pdfFObj)
+        num_pages = pdfReader.numPages
+        #print(f'pdf file has {num_pages} pages')
+        full_text=""
+        for page in range(num_pages):
+            pageObj=pdfReader.getPage(page)
+            full_text+= pageObj.extractText()
+            
+        pdf_dict[pdfKey] = full_text
+    return pdf_dict
+
+pdfDict = get_pdf_content(pdfDir_path)
 #test = pdfDict['24-03-2020_1']
 #print(type(test))
 #test = pdfDict[].replace('\n', ' ')
@@ -41,7 +54,6 @@ for k, text in pdfDict.items():
     text = text.split('. ')
     
     key_sentences = []
-    #key_sentences = ""
     for sentence in text:
         # --Find keywords in text
         cases_confirmed = sentence.find('caso' and 'confirmado')
@@ -51,15 +63,17 @@ for k, text in pdfDict.items():
         cond = (cases_confirmed != -1) and match != None
         if cond:
             key_sentences.append(sentence)
-            #key_sentences += sentence + '\n'
 
     
-    sentence_dict[k]= key_sentences
+    sentence_dict[k] = key_sentences
 
 
-#print(sentence_dict)
-print(sentence_dict['08-03-2020_1'])
-print(sentence_dict['15-03-2020_1'])
+print(type(sentence_dict.keys()))
+print(  )
+
+
+#print(sentence_dict['08-03-2020_1'])
+#print(sentence_dict['15-03-2020_1'])
 
 country_data_kwords = [r'confirmado \d+ ']
 state_data_kwords = ['provincia ']
@@ -98,8 +112,13 @@ pattern_dict = {
 data_dict={}
 not_data=[]
 for date, sent_list in sentence_dict.items():
+    date_str, num_file = date.split('_')
+    date = datetime.strptime(date_str, '%d-%m-%Y')
+    #num_file = int(num_file)
     #print(sent)
-    data_dict[date]={}
+    #data_dict[date] = {} 
+    data_dict[(date,num_file)]={}
+    #data_dict[date][num_file]={}
     #print(f'========= {date} =========')
     for pattern_name, pattern_list in pattern_dict.items():
         pattern = pattern_list[0]
@@ -110,9 +129,11 @@ for date, sent_list in sentence_dict.items():
                 #print(match)
                 data = match.group(digit_place_in_group)
                 #print(data)
-                data_dict[date][pattern_name] = int(data)
-    if data_dict[date] == {}:
-        not_data.append(date)
+                #data_dict[date][pattern_name] = int(data)
+                #data_dict[date][num_file][pattern_name] = int(data)
+                data_dict[(date,num_file)][pattern_name] = int(data)
+    if data_dict[(date,num_file)] == {}:
+        not_data.append((date,num_file))
     #print()
 #print(data_dict.items())
 
@@ -122,6 +143,10 @@ df=pd.DataFrame.from_dict(
         columns=['new_confirmed_AR','tot_confirmed_AR'],
         #dtype=pd.StringDtype()
         )
+
+#data.index = pd.to_datetime(data.index)
+print(df.index.get_level_values(0))
+
 
 df.sort_index(inplace=True)
 #print(df.index)
@@ -135,22 +160,39 @@ print(df.head())
 
 # TODO: store data in file
 # TODO: improve the format of the plots
-plt.plot(
-        df.index,
+m_fig = plt.figure()
+dates = df.index.get_level_values(0)
+plt.plot_date(
+        dates,
         df['new_confirmed_AR'],
         'bo--',
         label='new cases',
         )
-plt.plot(
-        df.index,
-        df['tot_confirmed_AR'],
-        'k+--',
-        label='total cases',
-        )
+#plt.plot(
+#        df.index,
+#        df['tot_confirmed_AR'],
+#        'k+--',
+#        label='total cases',
+#        )
 plt.xlabel('date')
 plt.legend()
 plt.show()
-#print(df.tail())
+print(type(m_fig))
+print(df.tail())
+
+#m_fig, ax = plt.subplots()
+#ax.axis(option='tight')
+#m_param = {
+#        'marker':'o',
+#        'color':'grey',
+#        'linestyle':'--',
+#        }
+#Nlib.my_plotter_2D(
+#        ax,
+#        df.index,
+#        df['new_confirmed_AR'],
+#        m_param
+#        )
 
 '''
 sns.lineplot(
