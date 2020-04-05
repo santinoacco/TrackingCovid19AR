@@ -70,8 +70,11 @@ def look_for_patterns(sentence_dict, pattern_dict):
     data_dict={}
     not_data=[]
     for date, sent_list in sentence_dict.items():
+        # --Delete empty lists
+        if sent_list==[]: continue
         # --Setting keys to dictionary
         date_str, num_file = date.split('_')
+        #date = datetime.strptime(date_str, '%d-%m-%Y').date()
         date = datetime.strptime(date_str, '%d-%m-%Y')
         data_dict[(date,num_file)]={}
         #print(f'========= {date} =========')
@@ -88,29 +91,30 @@ def look_for_patterns(sentence_dict, pattern_dict):
 
         if data_dict[(date,num_file)] == {}:
             not_data.append((date,num_file))
+            # --Transforming datetime to date
+            date = date.date()
+            print('===> unrecognized data:')
+            print(sentence_dict[f'{date:%d-%m-%Y}_{num_file}'])
+            #break
 
     return data_dict, not_data 
 
 def main(argv):
     #parser = Config_Parse()
     #args = parser.parse_args()    
-        
+    
+    # --Get raw data
     pdfDict = get_pdf_content(pdfDir_path)
-
-    #test = pdfDict['24-03-2020_1']
-    #print(type(test))
-    #test = pdfDict[].replace('\n', ' ')
-    #test = test.split('. ')
-
+    # --Get a dictionary with relevant sentences
     sentence_dict = presampler_pdf(pdfDict)
-    print(type(sentence_dict.keys()))
-    print(  )
+    #print(type(sentence_dict.keys()))
+    #print(  )
 
     # --Make a dictionary to store all paterns to extract,
     #   and the position of the digit
     pattern_dict = {
             'new_confirmed_AR':
-            [re.compile(r'confirmados?( \w+)? \(?(\d{1,5})\)?( nuevos casos)?'),2],
+            [re.compile(r'confirmados?(\s+\w+)? \(?(\d{1,5})\)?( nuevos casos)?'),2],
             'tot_confirmed_AR':
             [re.compile(r'total(e|es)?( \w+)? casos confirmados?( \w+)+ (\d{1,5})( total(e|es)?)?'),4],
             }
@@ -118,6 +122,8 @@ def main(argv):
 
     data_dict, not_data = look_for_patterns(sentence_dict, pattern_dict)
 
+    # TODO: store data in file
+    
     # --Create a pd.DataFrame
     df=pd.DataFrame.from_dict(
             data_dict,
@@ -127,17 +133,18 @@ def main(argv):
                 'tot_confirmed_AR'
                 ],
             )
-    
+
+    #TODO: same date files add news together 
+    #TODO: replace NaN values in tot_confirmed_AR
+    #TODO: add update on provinces
     df['new/tot'] = df['new_confirmed_AR']/df['tot_confirmed_AR']
-    print(df['new/tot'].head())
+    #print(df['new/tot'].head())
 
 
     df.sort_index(inplace=True)
-    print(not_data)
 
     print(df.head())
 
-    # TODO: store data in file
     # TODO: improve the format of the plots
     m_outfile = Nlib.build_dir('images','new_and_tot','.png')
     m_fig, ax = plt.subplots()
@@ -155,6 +162,7 @@ def main(argv):
             'label':'total cases',
             }
     dates = df.index.get_level_values(0)
+    #print(dates.dtype)
     plt.plot_date(
             dates,
             df['new_confirmed_AR'],
@@ -196,6 +204,31 @@ if __name__ == '__main__':
      main(sys.argv[1:])
 
 
+states =[
+        'Jujuy',
+        'Salta',
+        'Chaco',
+        'Formosa',
+        'Misiones',
+        'Catamarca',
+        'La Rioja',
+        'Tucumán',
+        'Entre Ríos',
+        'Santiago del Estero',
+        'Santa Fe',
+        'Ciudad Autónoma de Buenos Aires',
+        'Buenos Aires',
+        'Córdoba',
+        'La Pampa',
+        'Mendoza',
+        'San Luís',
+        'San Juan',
+        'Neuquén',
+        'Río Negro',
+        'Chubut',
+        'Santa Cruz',
+        'Tierra del Fuego'
+        ]
 
 #print(sentence_dict['08-03-2020_1'])
 #print(sentence_dict['15-03-2020_1'])
@@ -210,7 +243,6 @@ has_digits = re.compile(r'\d+')
 
 #pattern = re.compile(r'confirmados?( \w+)+(\d+)')
 
-states =['Ciudad Autónoma de Buenos Aires', 'Buenos Aires', 'Chaco', 'Formosa', 'Salta', 'Jujuy', 'Mendoza']
 
 
 #matches = pattern.finditer(sentence_dict['24-03-2020_1'][0])

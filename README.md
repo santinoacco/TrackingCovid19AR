@@ -1,4 +1,4 @@
-# Tracking the evolution of Covid-19 in Argentina using data from Google News
+# Tracking the evolution of Covid-19 in Argentina using data from the Health-ministry and other sources like Google News
 
 ## Required packages
 
@@ -10,9 +10,7 @@
 >-  bs4 :: to work with json files
 >-  PyPDF2 :: to read PDFs
 >-  re :: for regular expressions
->-  json
 >-  news-api, install like: sudo pip3 install newsapi-python
-
 
 
 ## Workflow
