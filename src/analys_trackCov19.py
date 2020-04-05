@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import PyPDF2
 import re
+import sys
 from os import listdir
 from os.path import join, splitext
 from datetime import datetime
@@ -11,14 +12,16 @@ import NoaccoLibrary as Nlib
 
 pdfDir_path = '/home/santi_noacco/Desktop/Covid_19/TrackCovid19Ar/Data_Covid19_Ar_pdf'
 
+
 def get_pdf_content(path):
     """
-    Description
+    Get the content of the pdfs files store in path.     
 
     # Args::
-    path: to dir of pdfs
+        path: to dir of pdfs
 
-    # Returns::$
+    # Returns::
+        pdf_dict: a dictionary keeping the full text of each pdf file.
     """  
     pdf_dict={}
     for filename in listdir(path): 
@@ -40,36 +43,158 @@ def get_pdf_content(path):
         pdf_dict[pdfKey] = full_text
     return pdf_dict
 
-pdfDict = get_pdf_content(pdfDir_path)
-#test = pdfDict['24-03-2020_1']
-#print(type(test))
-#test = pdfDict[].replace('\n', ' ')
-#test = test.split('. ')
-
-sentence_dict={}
-for k, text in pdfDict.items():
-    # --Replace newlines for nothing.
-    text = text.replace('\n', '')
-    # --Split sentences
-    text = text.split('. ')
+def presampler_pdf(pdf_dict):
+    sentence_dict={}
+    for k, text in pdf_dict.items():
+        # --Replace newlines for nothing.
+        text = text.replace('\n', '')
+        # --Split sentences
+        text = text.split('. ')
+        
+        key_sentences = []
+        for sentence in text:
+            # --Find keywords in text
+            cases_confirmed = sentence.find('caso' and 'confirmado')
+            # --Check that there are some digits at least
+            has_digits = re.compile(r'\d+')
+            match = has_digits.search(sentence)
+            cond = (cases_confirmed != -1) and match != None
+            if cond:
+                key_sentences.append(sentence)
+        
+        sentence_dict[k] = key_sentences
     
-    key_sentences = []
-    for sentence in text:
-        # --Find keywords in text
-        cases_confirmed = sentence.find('caso' and 'confirmado')
-        # --Check that there are some digits at least
-        has_digits = re.compile(r'\d+')
-        match = has_digits.search(sentence)
-        cond = (cases_confirmed != -1) and match != None
-        if cond:
-            key_sentences.append(sentence)
+    return sentence_dict
+
+def look_for_patterns(sentence_dict, pattern_dict):
+    data_dict={}
+    not_data=[]
+    for date, sent_list in sentence_dict.items():
+        # --Setting keys to dictionary
+        date_str, num_file = date.split('_')
+        date = datetime.strptime(date_str, '%d-%m-%Y')
+        data_dict[(date,num_file)]={}
+        #print(f'========= {date} =========')
+        for pattern_name, pattern_list in pattern_dict.items():
+            pattern = pattern_list[0]
+            digit_place_in_group = pattern_list[1]
+            # --Find patterns in each sentence
+            for sent in sent_list:
+                matches = pattern.finditer(sent)
+                for match in matches:
+                    #print(match)
+                    data = match.group(digit_place_in_group)
+                    data_dict[(date,num_file)][pattern_name] = int(data)
+
+        if data_dict[(date,num_file)] == {}:
+            not_data.append((date,num_file))
+
+    return data_dict, not_data 
+
+def main(argv):
+    #parser = Config_Parse()
+    #args = parser.parse_args()    
+        
+    pdfDict = get_pdf_content(pdfDir_path)
+
+    #test = pdfDict['24-03-2020_1']
+    #print(type(test))
+    #test = pdfDict[].replace('\n', ' ')
+    #test = test.split('. ')
+
+    sentence_dict = presampler_pdf(pdfDict)
+    print(type(sentence_dict.keys()))
+    print(  )
+
+    # --Make a dictionary to store all paterns to extract,
+    #   and the position of the digit
+    pattern_dict = {
+            'new_confirmed_AR':
+            [re.compile(r'confirmados?( \w+)? \(?(\d{1,5})\)?( nuevos casos)?'),2],
+            'tot_confirmed_AR':
+            [re.compile(r'total(e|es)?( \w+)? casos confirmados?( \w+)+ (\d{1,5})( total(e|es)?)?'),4],
+            }
+
+
+    data_dict, not_data = look_for_patterns(sentence_dict, pattern_dict)
+
+    # --Create a pd.DataFrame
+    df=pd.DataFrame.from_dict(
+            data_dict,
+            orient='index',
+            columns=[
+                'new_confirmed_AR',
+                'tot_confirmed_AR'
+                ],
+            )
+    
+    df['new/tot'] = df['new_confirmed_AR']/df['tot_confirmed_AR']
+    print(df['new/tot'].head())
+
+
+    df.sort_index(inplace=True)
+    print(not_data)
+
+    print(df.head())
+
+    # TODO: store data in file
+    # TODO: improve the format of the plots
+    m_outfile = Nlib.build_dir('images','new_and_tot','.png')
+    m_fig, ax = plt.subplots()
+    ax.axis(option='tight')
+    m1_param = {
+            'marker':'o',
+            'color':'grey',
+            'linestyle':'--',
+            'label':'new cases',
+            }
+    m2_param = {
+            'marker':'o',
+            'color':'green',
+            'linestyle':'--',
+            'label':'total cases',
+            }
+    dates = df.index.get_level_values(0)
+    plt.plot_date(
+            dates,
+            df['new_confirmed_AR'],
+            **m1_param
+            )
+    plt.plot_date(
+            dates,
+            df['tot_confirmed_AR'],
+            **m2_param
+            )
+    
+    plt.xlabel('date')
+    plt.legend()
+    plt.savefig(m_outfile)
+
+    m2_outfile = Nlib.build_dir('images','new_vs_tot','.png')
+    m2_fig, ax2 =plt.subplots()
+    ax2.axis(option='tight')
+    m3_param = {
+            'marker':'3',
+            'color':'red',
+            'linestyle':'--',
+            'label':f'new/tot cases',
+            }
+    plt.plot_date(
+             dates,
+            df['new/tot'],
+            **m3_param
+            )
+    plt.xlabel('date')
+    plt.legend()
+    plt.savefig(m2_outfile)
+    #plt.show()
 
     
-    sentence_dict[k] = key_sentences
+    return
 
+if __name__ == '__main__':
+     main(sys.argv[1:])
 
-print(type(sentence_dict.keys()))
-print(  )
 
 
 #print(sentence_dict['08-03-2020_1'])
@@ -99,94 +224,6 @@ states =['Ciudad Autónoma de Buenos Aires', 'Buenos Aires', 'Chaco', 'Formosa',
 #pattern = re.compile(r'confirmados? (\d{1,5}) (nuevos casos)?')
 #pattern = re.compile(r'total(e|es)?( \w+)? casos confirmados?( \w+)+ (\d{1,5})( total(e|es)?)?')
 
-# --Make a dictionary to store all paterns to extract,
-#   and the position of the digit
-pattern_dict = {
-        'new_confirmed_AR':
-        [re.compile(r'confirmados?( \w+)? \(?(\d{1,5})\)?( nuevos casos)?'),2],
-        'tot_confirmed_AR':
-        [re.compile(r'total(e|es)?( \w+)? casos confirmados?( \w+)+ (\d{1,5})( total(e|es)?)?'),4],
-        }
-
-
-data_dict={}
-not_data=[]
-for date, sent_list in sentence_dict.items():
-    date_str, num_file = date.split('_')
-    date = datetime.strptime(date_str, '%d-%m-%Y')
-    #num_file = int(num_file)
-    #print(sent)
-    #data_dict[date] = {} 
-    data_dict[(date,num_file)]={}
-    #data_dict[date][num_file]={}
-    #print(f'========= {date} =========')
-    for pattern_name, pattern_list in pattern_dict.items():
-        pattern = pattern_list[0]
-        digit_place_in_group = pattern_list[1]
-        for sent in sent_list:
-            matches = pattern.finditer(sent)
-            for match in matches:
-                #print(match)
-                data = match.group(digit_place_in_group)
-                #print(data)
-                #data_dict[date][pattern_name] = int(data)
-                #data_dict[date][num_file][pattern_name] = int(data)
-                data_dict[(date,num_file)][pattern_name] = int(data)
-    if data_dict[(date,num_file)] == {}:
-        not_data.append((date,num_file))
-    #print()
-#print(data_dict.items())
-
-df=pd.DataFrame.from_dict(
-        data_dict,
-        orient='index',
-        columns=['new_confirmed_AR','tot_confirmed_AR'],
-        #dtype=pd.StringDtype()
-        )
-
-#data.index = pd.to_datetime(data.index)
-print(df.index.get_level_values(0))
-
-
-df.sort_index(inplace=True)
-#print(df.index)
-#print(len(df['full_text'].str.split('\n')))
-#print(df.loc[:,'full_text'].str.split('\n'))
-#df['num_sentences'] = len(df.loc[:,'full_text'].str.split('\n'))
-#df['confirmed_cases'] = df[df.loc[:,'full_text'].str.contains('casos \d+' or '\d+ casos')]
-print(not_data)
-
-print(df.head())
-
-# TODO: store data in file
-# TODO: improve the format of the plots
-m_fig = plt.figure()
-dates = df.index.get_level_values(0)
-plt.plot_date(
-        dates,
-        df['new_confirmed_AR'],
-        'bo--',
-        label='new cases',
-        )
-#plt.plot(
-#        df.index,
-#        df['tot_confirmed_AR'],
-#        'k+--',
-#        label='total cases',
-#        )
-plt.xlabel('date')
-plt.legend()
-plt.show()
-print(type(m_fig))
-print(df.tail())
-
-#m_fig, ax = plt.subplots()
-#ax.axis(option='tight')
-#m_param = {
-#        'marker':'o',
-#        'color':'grey',
-#        'linestyle':'--',
-#        }
 #Nlib.my_plotter_2D(
 #        ax,
 #        df.index,

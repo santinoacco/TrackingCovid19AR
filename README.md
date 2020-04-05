@@ -24,12 +24,16 @@
 
 ### 'analys_trackCov19.py'
     
-    This is a data analysis script to read the pdfs and stract relevant     information.
+    This is a data analysis script to read the pdfs and stract relevant information.
     In addition it plots the data.
 
 ## Run
     First run 'trackingCov19' to get the updated data:
-$ python3 trackingCov19.py 
-    Sencond run 'analys_trackCov19' to get info from data:
-$ python3 analys_trackCov19.py
+    >- $ python3 trackingCov19.py 
     
+    Sencond run 'analys_trackCov19' to get info from data:
+    >- $ python3 analys_trackCov19.py
+
+## Pre results
+![](src/images/new_and_tot.png)
+![](src/images/new_vs_tot.png)    
