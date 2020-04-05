@@ -11,7 +11,7 @@
 >-  PyPDF2 :: to read PDFs
 >-  re :: for regular expressions
 >-  news-api, install like: sudo pip3 install newsapi-python
-
+>-  my personal library which you can find: https://github.com/santinoacco/MySetup/tree/master/Python 
 
 ## Workflow
 
