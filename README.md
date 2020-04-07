@@ -20,20 +20,20 @@
     This is a web scrapper that gets the PDF files from the official
     Health-ministry.
 
-### 'stract_patterns.py'
+### 'extract_patterns.py'
     
-    This is a data analysis script to read the pdfs and stract relevant information.
+    This is a data analysis script to read the pdfs and extract relevant information.
     In addition it plots the data.
 
 ## Run
     First run  'scrapperCov19.py' to get the updated data:
     >- $ python3 scrapperCov19.py
     
-    Sencond run 'stract_patterns.py' to get info from data:
-    >- $ python3 stract_patterns.py -I '<input_folder>' -O '<output_folder>'
+    Sencond run 'extract_patterns.py' to get info from data:
+    >- $ python3 extract_patterns.py -I '<input_folder>' -O '<output_folder>'
     
     example:
-    >- $ python3  stract_patterns.py -I 'Data_Covid19_Ar_pdf' -O 'Output_Covid19'
+    >- $ python3  extract_patterns.py -I 'Data_Covid19_Ar_pdf' -O 'Output_Covid19'
 
 ## Pre results
 ![](src/images/new_and_tot.png)
