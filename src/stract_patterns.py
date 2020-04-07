@@ -84,7 +84,7 @@ def look_for_patterns(sentence_dict, pattern_dict):
     data_dict={}
     not_data=[]
     for date, sent_list in sentence_dict.items():
-        # --Skip empty lists
+        # --Delete empty lists
         if sent_list==[]: continue
         # --Setting keys to dictionary
         date_str, num_file = date.split('_')

@@ -15,22 +15,25 @@
 
 ## Workflow
 
-### 'trackingCov19.py'
+### 'scrapperCov19.py'
 
     This is a web scrapper that gets the PDF files from the official
     Health-ministry.
 
-### 'analys_trackCov19.py'
+### 'stract_patterns.py'
     
     This is a data analysis script to read the pdfs and stract relevant information.
     In addition it plots the data.
 
 ## Run
-    First run 'trackingCov19' to get the updated data:
-    >- $ python3 trackingCov19.py 
+    First run  'scrapperCov19.py' to get the updated data:
+    >- $ python3 scrapperCov19.py
     
-    Sencond run 'analys_trackCov19' to get info from data:
-    >- $ python3 analys_trackCov19.py
+    Sencond run 'stract_patterns.py' to get info from data:
+    >- $ python3 stract_patterns.py -I '<input_folder>' -O '<output_folder>'
+    
+    example:
+    >- $ python3  stract_patterns.py -I 'Data_Covid19_Ar_pdf' -O 'Output_Covid19'
 
 ## Pre results
 ![](src/images/new_and_tot.png)
